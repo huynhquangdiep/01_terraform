@@ -1,0 +1,77 @@
+version: '3'
+services:
+  composer:
+    build:
+      context: .
+      target: composer
+    # Mount the codebase, so any code changes we make will be propagated to the running application
+    environment:
+      APP_DEBUG: "true"
+    volumes:
+      # Here we mount in our codebase so any changes are immediately reflected into the container
+      - '.:/app'
+    networks:
+      - lumen
+
+  build:
+    build:
+      context: .
+      target: build
+    # We can override any env values here.
+    # By default, the .env in the project root will be loaded as the environment for all containers
+    environment:
+      APP_DEBUG: "true"
+    # Mount the codebase, so any code changes we make will be propagated to the running application
+    volumes:
+      # Here we mount in our codebase so any changes are immediately reflected into the container
+      - '.:/var/www/html'
+    networks:
+      - lumen
+
+  cron:
+    build:
+      context: .
+      target: cron
+    # Here we mount in our codebase so any changes are immediately reflected into the container
+    volumes:
+      # Here we mount in our codebase so any changes are immediately reflected into the container
+      - '.:/var/www/html'
+    networks:
+      - lumen
+
+  nginx:
+    build:
+      context: .
+      target: web_server
+    # Expose our application port (80) through a port on our local machine (8080)
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      # We need to pass in the new FPM hst as the name of the fpm container on port 9000
+      FPM_HOST: "build:9000"
+    # Mount the public directory into the container, so we can serve any static files directly when they change
+    volumes:
+      # Here we mount in our codebase so any changes are immediately reflected into the container
+      - '.:/var/www/html'
+    networks:
+      - lumen
+
+  mysql:
+    image: mysql:8.0
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_USER=root
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=codebase
+    ports:
+      - "3306:3306"
+    networks:
+      - lumen
+
+networks:
+  lumen:
+    driver: bridge

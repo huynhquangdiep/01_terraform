@@ -1,0 +1,5 @@
+vendor
+data
+terraform/.terraform
+terraform/.idea
+terraform/.terraform.lock.hcl
